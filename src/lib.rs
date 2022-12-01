@@ -45,19 +45,22 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicUsize};
 use std::sync::{Arc, Mutex};
 
+#[derive(Default)]
 pub struct Dearbitrator {
     data: VecDeque<u8>,
 }
 
 impl Dearbitrator {
     pub fn new() -> Self {
-        Dearbitrator {
-            data: VecDeque::new(),
-        }
+        Dearbitrator::default()
     }
 
     pub fn len(&self) -> usize {
         self.data.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
     }
 
     pub fn push_rev_iter<I: Iterator>(&mut self, iter: I)
@@ -456,18 +459,17 @@ impl<'a> Dearbitrary for &'a str {
 
 impl Dearbitrary for String {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
-        (&self as &str).dearbitrary(dearbitrator)
+        (self as &str).dearbitrary(dearbitrator)
     }
 
     fn dearbitrary_first(&self) -> Dearbitrator {
-        let d = (&self as &str).dearbitrary_first();
-        d
+        (self as &str).dearbitrary_first()
     }
 }
 
 impl Dearbitrary for Box<str> {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
-        (&self as &str).dearbitrary(dearbitrator)
+        (self as &str).dearbitrary(dearbitrator)
     }
 }
 
@@ -549,6 +551,13 @@ mod test {
         assert_dearb_arb_eq!(255, u8);
         assert_dearb_arb_eq!(0x12345678, isize);
         assert_dearb_arb_eq!(0x12345678, usize);
+    }
+
+    #[test]
+    fn test_strings() {
+        assert_dearb_arb_eq!("ABCDEFG", &str);
+        assert_dearb_arb_eq!("ABCDEFG".to_string(), String);
+        assert_dearb_arb_eq!("ABCDEFG".into(), Box<str>);
     }
 
     #[test]
