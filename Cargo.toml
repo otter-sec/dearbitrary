@@ -23,8 +23,13 @@ rust-version = "1.63.0"
 derive_dearbitrary = { version = "1.1.6", path = "./derive", optional = true }
 
 [dev-dependencies]
-arbitrary = "1.2.0"
+arbitrary = {version="1.2.0", features = ["derive"]}
 
 [features]
 # Turn this feature on to enable support for `#[derive(Arbitrary)]`.
 derive = ["derive_dearbitrary"]
+
+[[test]]
+name = "derive"
+path = "./tests/derive.rs"
+required-features = ["derive"]

@@ -19,8 +19,8 @@
 // #![deny(unused)]
 #![allow(unused)]
 
-#[cfg(feature = "derive_arbitrary")]
-pub use derive_arbitrary::*;
+#[cfg(feature = "derive_dearbitrary")]
+pub use derive_dearbitrary::*;
 
 mod error;
 pub use error::*;
@@ -71,12 +71,18 @@ impl Dearbitrator {
         }
     }
 
-    pub fn push_rev_iter_last<I: Iterator>(&mut self, iter: I)
+    pub fn push_rev_iter_first<I: Iterator>(mut iter: I) -> Dearbitrator
     where
         <I as Iterator>::Item: Dearbitrary,
     {
-        for v in iter {
-            v.dearbitrary(self);
+        if let Some(cur) = iter.next() {
+            let mut d = cur.dearbitrary_first();
+            for v in iter {
+                v.dearbitrary(&mut d);
+            }
+            d
+        } else {
+            Dearbitrator::new()
         }
     }
 
@@ -118,10 +124,10 @@ impl Dearbitrator {
 pub trait Dearbitrary {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator);
 
-    fn dearbitraty_full(&self) -> Vec<u8> {
+    fn dearbitrary_first(&self) -> Dearbitrator {
         let mut d = Dearbitrator::new();
         self.dearbitrary(&mut d);
-        d.finish()
+        d
     }
 }
 
@@ -173,7 +179,6 @@ impl_dearbitrary_for_integers! {
     isize: usize;
 }
 
-
 macro_rules! impl_dearbitrary_for_floats {
     ( $( $ty:ident : $unsigned:ty; )* ) => {
         $(
@@ -191,7 +196,6 @@ impl_dearbitrary_for_floats! {
     f32: u32;
     f64: u64;
 }
-
 
 impl Dearbitrary for char {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
@@ -275,6 +279,13 @@ macro_rules! arbitrary_tuple {
                 self.$ln.dearbitrary(dearbitrator);
                 $( self.$n.dearbitrary(dearbitrator); )*
             }
+
+            fn dearbitrary_first(&self) -> Dearbitrator {
+                let mut dearbitrator = self.$ln.dearbitrary_first();
+                $( self.$n.dearbitrary(&mut dearbitrator); )*
+                dearbitrator
+            }
+
         }
 
 
@@ -327,6 +338,17 @@ impl<T: Dearbitrary, const N: usize> Dearbitrary for [T; N] {
             v.dearbitrary(dearbitrator)
         }
     }
+
+    fn dearbitrary_first(&self) -> Dearbitrator {
+        // TODO: check this
+        let mut d = if let Some(last) = self.last() {
+            last.dearbitrary_first()
+        } else {
+            Dearbitrator::new()
+        };
+        self.dearbitrary(&mut d);
+        d
+    }
 }
 
 impl<'a> Dearbitrary for &'a [u8] {
@@ -334,11 +356,22 @@ impl<'a> Dearbitrary for &'a [u8] {
         dearbitrator.push_bytes(self);
         dearbitrator.push_len(self.len());
     }
+
+    fn dearbitrary_first(&self) -> Dearbitrator {
+        let mut d = Dearbitrator::new();
+        d.push_bytes(self);
+        d
+    }
 }
 
 impl<A: Dearbitrary> Dearbitrary for Vec<A> {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
         dearbitrator.push_rev_iter(self.iter().rev())
+    }
+
+    fn dearbitrary_first(&self) -> Dearbitrator {
+        let d = Dearbitrator::push_rev_iter_first(self.iter().rev());
+        d
     }
 }
 
@@ -346,17 +379,32 @@ impl<K: Dearbitrary, V: Dearbitrary> Dearbitrary for BTreeMap<K, V> {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
         dearbitrator.push_rev_iter(self.iter().rev())
     }
+
+    fn dearbitrary_first(&self) -> Dearbitrator {
+        let d = Dearbitrator::push_rev_iter_first(self.iter().rev());
+        d
+    }
 }
 
 impl<A: Dearbitrary> Dearbitrary for BTreeSet<A> {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
         dearbitrator.push_rev_iter(self.iter().rev())
     }
+
+    fn dearbitrary_first(&self) -> Dearbitrator {
+        let d = Dearbitrator::push_rev_iter_first(self.iter().rev());
+        d
+    }
 }
 
 impl<A: Dearbitrary> Dearbitrary for BinaryHeap<A> {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
         dearbitrator.push_rev_iter(self.iter().rev())
+    }
+
+    fn dearbitrary_first(&self) -> Dearbitrator {
+        let d = Dearbitrator::push_rev_iter_first(self.iter().rev());
+        d
     }
 }
 
@@ -366,11 +414,21 @@ impl<A: Dearbitrary + Eq + ::std::hash::Hash, S: BuildHasher + Default> Dearbitr
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
         dearbitrator.push_rev_iter(self.iter()) // order does not matter
     }
+
+    fn dearbitrary_first(&self) -> Dearbitrator {
+        let d = Dearbitrator::push_rev_iter_first(self.iter());
+        d
+    }
 }
 
 impl<A: Dearbitrary> Dearbitrary for LinkedList<A> {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
         dearbitrator.push_rev_iter(self.iter()) // order does not matter
+    }
+
+    fn dearbitrary_first(&self) -> Dearbitrator {
+        let d = Dearbitrator::push_rev_iter_first(self.iter().rev());
+        d
     }
 }
 
@@ -378,17 +436,32 @@ impl<A: Dearbitrary> Dearbitrary for VecDeque<A> {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
         dearbitrator.push_rev_iter(self.iter()) // order does not matter
     }
+
+    fn dearbitrary_first(&self) -> Dearbitrator {
+        let d = Dearbitrator::push_rev_iter_first(self.iter().rev());
+        d
+    }
 }
 
 impl<'a> Dearbitrary for &'a str {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
         self.as_bytes().dearbitrary(dearbitrator)
     }
+
+    fn dearbitrary_first(&self) -> Dearbitrator {
+        let d = self.as_bytes().dearbitrary_first();
+        d
+    }
 }
 
 impl Dearbitrary for String {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
         (&self as &str).dearbitrary(dearbitrator)
+    }
+
+    fn dearbitrary_first(&self) -> Dearbitrator {
+        let d = (&self as &str).dearbitrary_first();
+        d
     }
 }
 
@@ -404,11 +477,22 @@ mod test {
     use arbitrary::*;
 
     macro_rules! assert_dearb_arb_eq {
-        // The `tt` (token tree) designator is used for
-        // operators and tokens.
         ($v:expr, $t:ty) => {{
+            // FIXME: dearbitrary first does now work for now
+
+            // with take rest
+            // let x: $t = $v;
+            // let bytes = x.dearbitrary_first().finish();
+            //
+            // let mut u = Unstructured::new(&bytes);
+            // let y = <$t>::arbitrary_take_rest(u).unwrap();
+            // assert_eq!(x, y);
+
+            // without take rest
             let x: $t = $v;
-            let bytes = x.dearbitraty_full();
+            let mut d = Dearbitrator::new();
+            x.dearbitrary(&mut d);
+            let bytes = d.finish();
 
             let mut u = Unstructured::new(&bytes);
             let y = <$t>::arbitrary(&mut u).unwrap();
@@ -450,7 +534,10 @@ mod test {
 
     #[test]
     fn test_optional() {
-        assert_dearb_arb_eq!(Some((vec![1, 0xfffffff_u64, 3], 0xfffffff_u64, vec![10, 20])), Option<(Vec<u64>, u64, Vec<u8>)>);
+        assert_dearb_arb_eq!(
+            Some((vec![1, 0xfffffff_u64, 3], 0xfffffff_u64, vec![10, 20])),
+            Option<(Vec<u64>, u64, Vec<u8>)>
+        );
     }
 
     #[test]
@@ -463,52 +550,16 @@ mod test {
         assert_dearb_arb_eq!(0x12345678, isize);
         assert_dearb_arb_eq!(0x12345678, usize);
     }
-}
 
-/// Multiple conflicting arbitrary attributes are used on the same field:
-/// ```compile_fail
-/// #[derive(::arbitrary::Arbitrary)]
-/// struct Point {
-///     #[arbitrary(value = 2)]
-///     #[arbitrary(value = 2)]
-///     x: i32,
-/// }
-/// ```
-///
-/// An unknown attribute:
-/// ```compile_fail
-/// #[derive(::arbitrary::Arbitrary)]
-/// struct Point {
-///     #[arbitrary(unknown_attr)]
-///     x: i32,
-/// }
-/// ```
-///
-/// An unknown attribute with a value:
-/// ```compile_fail
-/// #[derive(::arbitrary::Arbitrary)]
-/// struct Point {
-///     #[arbitrary(unknown_attr = 13)]
-///     x: i32,
-/// }
-/// ```
-///
-/// `value` without RHS:
-/// ```compile_fail
-/// #[derive(::arbitrary::Arbitrary)]
-/// struct Point {
-///     #[arbitrary(value)]
-///     x: i32,
-/// }
-/// ```
-///
-/// `with` without RHS:
-/// ```compile_fail
-/// #[derive(::arbitrary::Arbitrary)]
-/// struct Point {
-///     #[arbitrary(with)]
-///     x: i32,
-/// }
-/// ```
-#[cfg(all(doctest, feature = "derive"))]
-pub struct CompileFailTests;
+    #[test]
+    fn test_deep_nest() {
+        assert_dearb_arb_eq!(
+            vec![(10u8, vec![10f32, 20f32]), (12u8, vec![100f32, 10000f32])],
+            Vec<(u8, Vec<f32>)>
+        );
+        assert_dearb_arb_eq!(
+            vec![(10u64, vec![10f32, 20f32]), (12u64, vec![100f32, 10000f32])],
+            Vec<(u64, Vec<f32>)>
+        );
+    }
+}

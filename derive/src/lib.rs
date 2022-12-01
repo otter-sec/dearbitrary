@@ -13,7 +13,7 @@ fn expand_derive_dearbitrary(input: syn::DeriveInput) -> Result<TokenStream> {
 
     Ok(quote! {
         const _: () = {
-            impl #impl_generics arbitrary::Dearbitrary for #name #ty_generics #where_clause {
+            impl #impl_generics dearbitrary::Dearbitrary for #name #ty_generics #where_clause {
                 #dearbitrary_method
             }
         };
@@ -23,7 +23,9 @@ fn expand_derive_dearbitrary(input: syn::DeriveInput) -> Result<TokenStream> {
 fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in generics.params.iter_mut() {
         if let GenericParam::Type(type_param) = param {
-            type_param.bounds.push(parse_quote!(arbitrary::Dearbitrary));
+            type_param
+                .bounds
+                .push(parse_quote!(dearbitrary::Dearbitrary));
         }
     }
     generics
@@ -92,7 +94,7 @@ fn gen_dearbitrary_method(input: &DeriveInput) -> Result<TokenStream> {
 
             let count = data.variants.len() as u64;
             quote! {
-                fn dearbitrary(&self, _dearbitrator: &mut arbitrary::Dearbitrator) {
+                fn dearbitrary(&self, _dearbitrator: &mut dearbitrary::Dearbitrator) {
                     let val = match self {
                         #(#variants,)*
                         _ => unreachable!()
@@ -142,7 +144,10 @@ fn dearbitrary_structlike(fields: &Fields, _ident: &Ident) -> TokenStream {
                 .iter()
                 .enumerate()
                 .rev()
-                .map(|(i, _)| quote! { self.#i.dearbitrary(_dearbitrator); })
+                .map(|(i, _)| {
+                    let i = syn::Index::from(i);
+                    quote! { self.#i.dearbitrary(_dearbitrator); }
+                })
                 .collect();
             quote! {
                 #(
@@ -154,7 +159,7 @@ fn dearbitrary_structlike(fields: &Fields, _ident: &Ident) -> TokenStream {
     };
 
     quote! {
-        fn dearbitrary(&self, _dearbitrator: &mut arbitrary::Dearbitrator) {
+        fn dearbitrary(&self, _dearbitrator: &mut dearbitrary::Dearbitrator) {
             #body
         }
     }
