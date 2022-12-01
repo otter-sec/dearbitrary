@@ -1,0 +1,27 @@
+[package]
+name = "dearbitrary"
+version = "1.2.0" # Make sure this matches the derive crate version
+authors = [
+    "The Rust-Fuzz Project Developers",
+    "Nick Fitzgerald <fitzgen@gmail.com>",
+    "Manish Goregaokar <manishsmail@gmail.com>",
+    "Simonas Kazlauskas <arbitrary@kazlauskas.me>",
+    "Brian L. Troutwine <brian@troutwine.us>",
+    "Corey Farwell <coreyf@rwell.org>",
+]
+categories = ["development-tools::testing"]
+edition = "2018"
+keywords = ["dearbitrary", "testing"]
+readme = "README.md"
+description = "The trait for generating unstructured data from structured data"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/rust-fuzz/dearbitrary/"
+documentation = "https://docs.rs/dearbitrary/"
+rust-version = "1.63.0"
+
+[dependencies]
+derive_dearbitrary = { version = "1.1.6", path = "./derive", optional = true }
+
+[features]
+# Turn this feature on to enable support for `#[derive(Arbitrary)]`.
+derive = ["derive_dearbitrary"]
