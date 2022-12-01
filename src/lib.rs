@@ -46,7 +46,7 @@ use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicUsize};
 use std::sync::{Arc, Mutex};
 
 pub struct Dearbitrator {
-    pub data: VecDeque<u8>,
+    data: VecDeque<u8>,
 }
 
 impl Dearbitrator {
@@ -59,10 +59,6 @@ impl Dearbitrator {
     pub fn len(&self) -> usize {
         self.data.len()
     }
-
-    // pub fn dearbitrary_len(&mut self, len: usize) {
-    //
-    // }
 
     pub fn push_rev_iter<I: Iterator>(&mut self, iter: I)
     where
@@ -91,7 +87,6 @@ impl Dearbitrator {
     }
 
     pub fn push_len(&mut self, len: usize) {
-
         if self.data.len() as u64 <= std::u8::MAX as u64 {
             let len = len as u8;
             for b in len.to_be_bytes() {
@@ -113,7 +108,6 @@ impl Dearbitrator {
                 self.data.push_back(b);
             }
         };
-
     }
 
     pub fn finish(self) -> Vec<u8> {
@@ -131,14 +125,11 @@ pub trait Dearbitrary {
     }
 }
 
-
 impl<T: Dearbitrary> Dearbitrary for &T {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
         (*self).dearbitrary(dearbitrator)
     }
 }
-
-
 
 impl Dearbitrary for () {
     fn dearbitrary(&self, _dearbitrator: &mut Dearbitrator) {}
@@ -149,7 +140,6 @@ impl Dearbitrary for bool {
         (*self as u8).dearbitrary(dearbitrator);
     }
 }
-
 
 macro_rules! impl_dearbitrary_for_integers {
     ( $( $ty:ty: $unsigned:ty; )* ) => {
@@ -181,6 +171,25 @@ impl_dearbitrary_for_integers! {
     i64: u64;
     i128: u128;
     isize: usize;
+}
+
+
+macro_rules! impl_dearbitrary_for_floats {
+    ( $( $ty:ident : $unsigned:ty; )* ) => {
+        $(
+            impl Dearbitrary for $ty {
+                fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
+                    ((*self).to_bits()).dearbitrary(dearbitrator);
+                }
+            }
+
+        )*
+    }
+}
+
+impl_dearbitrary_for_floats! {
+    f32: u32;
+    f64: u64;
 }
 
 
@@ -351,8 +360,9 @@ impl<A: Dearbitrary> Dearbitrary for BinaryHeap<A> {
     }
 }
 
-
-impl<A: Dearbitrary + Eq + ::std::hash::Hash, S: BuildHasher + Default> Dearbitrary for HashSet<A, S> {
+impl<A: Dearbitrary + Eq + ::std::hash::Hash, S: BuildHasher + Default> Dearbitrary
+    for HashSet<A, S>
+{
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
         dearbitrator.push_rev_iter(self.iter()) // order does not matter
     }
@@ -385,6 +395,73 @@ impl Dearbitrary for String {
 impl Dearbitrary for Box<str> {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
         (&self as &str).dearbitrary(dearbitrator)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use arbitrary::*;
+
+    macro_rules! assert_dearb_arb_eq {
+        // The `tt` (token tree) designator is used for
+        // operators and tokens.
+        ($v:expr, $t:ty) => {{
+            let x: $t = $v;
+            let bytes = x.dearbitraty_full();
+
+            let mut u = Unstructured::new(&bytes);
+            let y = <$t>::arbitrary(&mut u).unwrap();
+            assert_eq!(x, y);
+        }};
+    }
+
+    #[test]
+    fn dearbitrary_for_integers() {
+        assert_dearb_arb_eq!(1 | (2 << 8) | (3 << 16) | (4 << 24), i32);
+    }
+
+    #[test]
+    fn dearbitrary_for_bytes() {
+        assert_dearb_arb_eq!(&[1, 2, 3, 4], &[u8]);
+    }
+
+    #[test]
+    fn dearbitrary_collection() {
+        assert_dearb_arb_eq!(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3], &[u8]);
+        assert_dearb_arb_eq!(vec![2, 4, 6, 8, 1], Vec<u16>);
+        assert_dearb_arb_eq!(vec![84148994], Vec<u32>);
+        assert_dearb_arb_eq!(vec![123; 100], Vec<usize>);
+        assert_dearb_arb_eq!(
+            "\x01\x02\x03\x04\x05\x06\x07\x08\x09\x01\x02\x03".to_string(),
+            String
+        );
+    }
+
+    #[test]
+    fn test_multiple_vecs_i32() {
+        assert_dearb_arb_eq!((vec![1, 2, 3], vec![10, 20, 21]), (Vec<i32>, Vec<i32>));
+    }
+
+    #[test]
+    fn test_multiple_vecs_u8() {
+        assert_dearb_arb_eq!((vec![1, 2, 3, 4], vec![10, 20, 21]), (Vec<u8>, Vec<u8>));
+    }
+
+    #[test]
+    fn test_optional() {
+        assert_dearb_arb_eq!(Some((vec![1, 0xfffffff_u64, 3], 0xfffffff_u64, vec![10, 20])), Option<(Vec<u64>, u64, Vec<u8>)>);
+    }
+
+    #[test]
+    fn test_integers() {
+        assert_dearb_arb_eq!(-0x12345678_i32, i32);
+        assert_dearb_arb_eq!(0x12345678_u64, u64);
+        assert_dearb_arb_eq!(1.123f64, f64);
+        assert_dearb_arb_eq!(1.123f32, f32);
+        assert_dearb_arb_eq!(255, u8);
+        assert_dearb_arb_eq!(0x12345678, isize);
+        assert_dearb_arb_eq!(0x12345678, usize);
     }
 }
 
