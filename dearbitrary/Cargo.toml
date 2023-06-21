@@ -1,0 +1,32 @@
+[package]
+name = "dearbitrary"
+version = "1.0.0"
+authors = [
+    "Otter-Sec",
+    "Aleksandre Khokhiashvili <alkhok18@freeuni.edu.ge>",
+    "qdrs <qdrs@proton.me>"
+]
+categories = ["development-tools::testing"]
+edition = "2021"
+keywords = ["dearbitrary", "testing"]
+readme = "README.md"
+description = "The trait for generating unstructured data from structured data"
+license = "MIT"
+repository = "https://github.com/otter-sec/dearbitrary/"
+documentation = "https://docs.rs/dearbitrary/"
+rust-version = "1.70.0"
+
+[dependencies]
+dearbitrary_derive = { path = "../dearbitrary_derive", optional = true }
+
+[dev-dependencies]
+arbitrary = { workspace = true }
+
+[features]
+# Turn this feature on to enable support for `#[derive(Dearbitrary)]`.
+derive = ["dearbitrary_derive"]
+
+[[test]]
+name = "derive"
+path = "./tests/derive.rs"
+required-features = ["derive"]

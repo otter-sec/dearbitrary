@@ -1,5 +1,3 @@
-extern crate proc_macro;
-
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::*;
@@ -86,10 +84,10 @@ fn gen_dearbitrary_method(input: &DeriveInput) -> Result<TokenStream> {
 
             let variants2 = data.variants.iter().enumerate().map(|(_, variant)| {
                 let dtor = gen_dtor(&variant.fields);
-                let foo = gen_dtor2(&variant.fields);
+                let dimpl = gen_dtor2(&variant.fields);
 
                 let variant_name = &variant.ident;
-                quote! { #ident::#variant_name #dtor => { #foo } }
+                quote! { #ident::#variant_name #dtor => { #dimpl } }
             });
 
             let count = data.variants.len() as u64;
