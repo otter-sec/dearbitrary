@@ -1,6 +1,6 @@
 [package]
 name = "dearbitrary"
-version = "1.0.1"
+version = "1.0.2"
 authors = [
     "Otter-Sec",
     "Aleksandre Khokhiashvili <alkhok18@freeuni.edu.ge>",
