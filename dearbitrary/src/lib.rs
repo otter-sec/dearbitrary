@@ -78,15 +78,18 @@ impl Dearbitrator {
     where
         <I as Iterator>::Item: Dearbitrary,
     {
-        if let Some(cur) = iter.next() {
-            let mut d = cur.dearbitrary_first();
-            for v in iter {
-                v.dearbitrary(&mut d);
-            }
-            d
-        } else {
-            Dearbitrator::new()
-        }
+        let mut d = Dearbitrator::new();
+        d.push_rev_iter(iter);
+        d
+        // if let Some(cur) = iter.next() {
+        //     let mut d = cur.dearbitrary_first();
+        //     for v in iter {
+        //         v.dearbitrary(&mut d);
+        //     }
+        //     d
+        // } else {
+        //     Dearbitrator::new()
+        // }
     }
 
     pub fn push_bytes(&mut self, data: &[u8]) {
@@ -137,6 +140,10 @@ pub trait Dearbitrary {
 impl<T: Dearbitrary> Dearbitrary for &T {
     fn dearbitrary(&self, dearbitrator: &mut Dearbitrator) {
         (*self).dearbitrary(dearbitrator)
+    }
+
+    fn dearbitrary_first(&self) -> Dearbitrator {
+        (*self).dearbitrary_first()
     }
 }
 
