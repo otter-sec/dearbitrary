@@ -20,7 +20,7 @@
 #![allow(unused)]
 
 #[cfg(feature = "derive")]
-pub use dearbitrary_derive::*;
+pub use derive_dearbitrary::*;
 
 mod error;
 pub use error::*;

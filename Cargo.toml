@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "dearbitrary",
-    "dearbitrary_derive",
+    "derive_dearbitrary",
 ]
 
 [workspace.dependencies]

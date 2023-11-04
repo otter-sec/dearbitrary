@@ -1,6 +1,6 @@
 [package]
-name = "dearbitrary_derive"
-version = "1.0.2"
+name = "derive_dearbitrary"
+version = "1.0.4"
 authors = [
     "Otter-Sec",
     "Aleksandre Khokhiashvili <alkhok18@freeuni.edu.ge>",
@@ -13,7 +13,7 @@ readme = "README.md"
 description = "Derives dearbitrary traits"
 license = "MIT"
 repository = "https://github.com/otter-sec/dearbitrary/"
-documentation = "https://docs.rs/dearbitrary_derive/"
+documentation = "https://docs.rs/derive_dearbitrary/"
 rust-version = "1.70.0"
 
 [dependencies]

@@ -17,14 +17,14 @@ documentation = "https://docs.rs/dearbitrary/"
 rust-version = "1.70.0"
 
 [dependencies]
-dearbitrary_derive = { version = "1.0.4", path = "../dearbitrary_derive", optional = true }
+derive_dearbitrary = { version = "1.0.4", path = "../derive_dearbitrary", optional = true }
 
 [dev-dependencies]
 arbitrary = { workspace = true }
 
 [features]
 # Turn this feature on to enable support for `#[derive(Dearbitrary)]`.
-derive = ["dearbitrary_derive"]
+derive = ["derive_dearbitrary"]
 
 [[test]]
 name = "derive"
