@@ -1,6 +1,6 @@
 [package]
 name = "dearbitrary"
-version = "1.0.3"
+version = "1.0.4"
 authors = [
     "Otter-Sec",
     "Aleksandre Khokhiashvili <alkhok18@freeuni.edu.ge>",
@@ -17,7 +17,7 @@ documentation = "https://docs.rs/dearbitrary/"
 rust-version = "1.70.0"
 
 [dependencies]
-dearbitrary_derive = { version = "1.0.0", path = "../dearbitrary_derive", optional = true }
+dearbitrary_derive = { path = "../dearbitrary_derive", optional = true }
 
 [dev-dependencies]
 arbitrary = { workspace = true }
