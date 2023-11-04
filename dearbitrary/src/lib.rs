@@ -487,15 +487,13 @@ mod test {
 
     macro_rules! assert_dearb_arb_eq {
         ($v:expr, $t:ty) => {{
-            // FIXME: dearbitrary first does now work for now
-
             // with take rest
-            // let x: $t = $v;
-            // let bytes = x.dearbitrary_first().finish();
-            //
-            // let mut u = Unstructured::new(&bytes);
-            // let y = <$t>::arbitrary_take_rest(u).unwrap();
-            // assert_eq!(x, y);
+            let x: $t = $v;
+            let bytes = x.dearbitrary_first().finish();
+
+            let mut u = Unstructured::new(&bytes);
+            let y = <$t>::arbitrary_take_rest(u).unwrap();
+            assert_eq!(x, y);
 
             // without take rest
             let x: $t = $v;

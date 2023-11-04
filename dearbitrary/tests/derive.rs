@@ -8,15 +8,13 @@ use dearbitrary::*;
 
 macro_rules! assert_dearb_arb_eq {
     ($v:expr, $t:ty) => {{
-        // FIXME: dearbitrary first does now work for now
-
         // with take rest
-        // let x: $t = $v;
-        // let bytes = x.dearbitrary_first().finish();
-        //
-        // let mut u = Unstructured::new(&bytes);
-        // let y = <$t>::arbitrary_take_rest(u).unwrap();
-        // assert_eq!(x, y);
+        let x: $t = $v;
+        let bytes = x.dearbitrary_first().finish();
+
+        let u = Unstructured::new(&bytes);
+        let y = <$t>::arbitrary_take_rest(u).unwrap();
+        assert_eq!(x, y);
 
         // without take rest
         let x: $t = $v;
@@ -86,19 +84,6 @@ struct EndingInString(u8, bool, u32, String);
 
 #[test]
 fn test_take_rest() {
-    // let bytes = [1, 1, 1, 2, 3, 4, 5, 6, 7, 8];
-    // let s1 = EndingInVec::arbitrary_take_rest(Unstructured::new(&bytes)).unwrap();
-    // let s2 = EndingInString::arbitrary_take_rest(Unstructured::new(&bytes)).unwrap();
-    // assert_eq!(s1.0, 1);
-    // assert_eq!(s2.0, 1);
-    // assert_eq!(s1.1, true);
-    // assert_eq!(s2.1, true);
-    // assert_eq!(s1.2, 0x4030201);
-    // assert_eq!(s2.2, 0x4030201);
-    // assert_eq!(s1.3, vec![0x605, 0x807]);
-    // assert_eq!(s2.3, "\x05\x06\x07\x08");
-    // assert_dearb_arb_eq!(s1);
-    // assert_dearb_arb_eq!(s2);
     assert_dearb_arb_eq!(
         EndingInVec(1, false, 0x4030201, vec![0x605, 0x807]),
         EndingInVec
@@ -107,4 +92,59 @@ fn test_take_rest() {
         EndingInString(1, false, 0x4030201, "\x05\x06\x07\x08".to_string()),
         EndingInString
     );
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Arbitrary, Dearbitrary)]
+struct Empty;
+
+#[test]
+fn derive_empty() {
+    assert_dearb_arb_eq!(Empty, Empty);
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Arbitrary, Dearbitrary)]
+enum Color {
+    A(Vec<u8>, bool),
+    B,
+    C { _x: u64, _v: Box<Color> },
+    D(String),
+}
+
+#[test]
+fn derive_enum() {
+    // random lot of samples
+    let v = vec![
+        Color::B,
+        Color::D("aaa".to_string()),
+        Color::A(vec![1, 2, 3], false),
+        Color::C {
+            _x: 100,
+            _v: Box::new(Color::B),
+        },
+        Color::C {
+            _x: 100,
+            _v: Box::new(Color::D("".to_string())),
+        },
+        Color::C {
+            _x: 100,
+            _v: Box::new(Color::A(vec![], false)),
+        },
+        Color::A(vec![], true),
+        Color::C {
+            _x: 100,
+            _v: Box::new(Color::C {
+                _x: 100,
+                _v: Box::new(Color::A(vec![], false)),
+            }),
+        },
+    ];
+    for e in v.clone().into_iter() {
+        assert_dearb_arb_eq!(e.clone(), Color);
+    }
+    for i in 0..=v.len() {
+        assert_dearb_arb_eq!(v[..i].to_vec(), Vec<Color>);
+    }
+    for i in 0..=v.len() {
+        assert_dearb_arb_eq!(v[i..].to_vec(), Vec<Color>);
+    }
 }
